@@ -1,0 +1,25 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+
+    "profiles": {
+      "$userId": {
+        ".read": "($userId === auth.uid)",
+        ".write": "($userId === auth.uid)"
+      }
+    },
+    "messages": {
+      "$userId": {
+        ".read": "($userId === auth.uid)",
+        ".write": "($userId === auth.uid)"
+      }
+    },
+    "firstLogin": {
+      "$userId": {
+        ".read": "($userId === auth.uid)",
+        ".write": "($userId === auth.uid)"
+      }
+    }
+  }
+}

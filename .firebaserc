@@ -1,0 +1,6 @@
+{
+  "projects": {
+    "default": "awesome-prod-b0980",
+    "staging": "awesome-qa"
+  }
+}
