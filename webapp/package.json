@@ -5,8 +5,8 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
-    "qa-build": "ng build --configuration qa --output-path ../public",
-    "prod-build": "ng build --prod --output-path ../public",
+    "qa-build": "ng build --configuration qa --output-path ../qa_public",
+    "prod-build": "ng build --prod --output-path ../prod_public",
     "test": "ng test",
     "lint": "ng lint",
     "e2e": "ng e2e"

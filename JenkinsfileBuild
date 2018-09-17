@@ -1,0 +1,54 @@
+node('master') {
+    initJob()
+
+    try {
+        ansiColor('xterm') {
+            echo "Building from ${env.BRANCH_NAME}"
+
+            withDockerContainer('node:8-onbuild') {
+                stage('Build Functions') {
+                    sh '''
+                           cd functions
+                           rm -rf node_modules/
+                           npm install
+                           npm run build
+                       '''
+                }
+                stage('Build webapp') {
+                    sh """
+                           cd webapp
+                           rm -rf node_modules/
+                           npm install
+                           npm run qa-build
+                           npm run prod-build
+                       """
+                }
+            }
+
+            stage('Archive builds'){
+                def dockerImage = docker.build("firebase-is-awesome:${env.GIT_COMMIT}");
+                docker.withRegistry('https://registry.wanari.net', 'jenkins-registry') {
+                    dockerImage.push()
+                }
+            }
+
+        }
+
+    } catch (e) {
+        println(e)
+        currentBuild.result = 'FAILURE'
+    }
+    finishJob()
+}
+
+def initJob() {
+    cleanWs()
+    def scmVars = checkout scm
+    env.GIT_COMMIT = scmVars.GIT_COMMIT
+    env.GIT_BRANCH = scmVars.GIT_BRANCH
+}
+
+def finishJob() {
+    currentBuild.result = currentBuild.result ?: 'SUCCESS'
+    cleanWs()
+}
