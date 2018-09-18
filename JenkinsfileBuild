@@ -24,6 +24,14 @@ node('master') {
                        """
                 }
             }
+            withDockerContainer('python:2.7-slim') {
+                stage('Build App Engine') {
+                    sh '''
+                           cd appengine
+                           pip install -t lib -r requirements.txt --upgrade
+                       '''
+                }
+            }
 
             stage('Archive builds'){
                 def dockerImage = docker.build("firebase-is-awesome:${env.GIT_COMMIT}");
