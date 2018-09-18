@@ -1,5 +1,5 @@
 cron:
 - description: Push a "tick" every minute.
   url: /publish/tick
-  schedule: every minute
+  schedule: every 1 minutes
   timezone: Europe/Budapest

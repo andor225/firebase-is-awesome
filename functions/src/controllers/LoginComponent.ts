@@ -1,4 +1,5 @@
 import * as admin from 'firebase-admin';
+import * as functions from 'firebase-functions';
 import { Router, Request, Response, NextFunction } from 'express'
 import * as bodyParser from 'body-parser';
 import * as cors from 'cors';
@@ -18,8 +19,8 @@ export default class LoginComponent {
     }
 
     private health = async (req: Request, res: Response, next: NextFunction) => {
-        admin.database().ref('/messages/health').push({
-            message: 'Health Check'
-        }).then(_ => res.status(200).end());
+        const message = "Hello " + functions.config().boss.name;
+        admin.database().ref('/messages/health').push({message})
+            .then(_ => res.status(200).end());
     }
 };

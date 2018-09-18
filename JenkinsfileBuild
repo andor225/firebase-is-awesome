@@ -3,8 +3,6 @@ node('master') {
 
     try {
         ansiColor('xterm') {
-            echo "Building from ${env.BRANCH_NAME}"
-
             withDockerContainer('node:8-onbuild') {
                 stage('Build Functions') {
                     sh '''
@@ -39,7 +37,6 @@ node('master') {
                     dockerImage.push()
                 }
             }
-
         }
 
     } catch (e) {

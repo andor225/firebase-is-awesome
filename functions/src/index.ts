@@ -23,6 +23,5 @@ exports.makeUppercase = functions.database.ref('/messages/{uid}/{pushId}')
 
 exports.minutesTick = functions.pubsub.topic('tick')
     .onPublish((event) => {
-       const time = moment();
-       console.log(time.format());
+       return moment().format();
     });

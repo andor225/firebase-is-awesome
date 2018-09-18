@@ -1,0 +1,119 @@
+node('master') {
+    initJob()
+
+    try {
+        ansiColor('xterm') {
+            echo "Deploy to ${DEPLOY_ENVIRONMENT} from ${env.COMMIT_HASH}"
+            switch (env.DEPLOY_ENVIRONMENT) {
+                case 'qa':
+                    deployToQa()
+                    break
+                case 'prod':
+                    deployToProd()
+                    break
+                default:
+                    echo "Invalid deploy environment ${env.DEPLOY_ENVIRONMENT}"
+                    currentBuild.result = 'FAILURE'
+                    break
+            }
+        }
+
+    } catch (e) {
+        println(e)
+        currentBuild.result = 'FAILURE'
+    }
+    finishJob()
+}
+
+def initJob() {
+    cleanWs()
+    checkout scm
+}
+
+def deployToQa() {
+    withCredentials([
+            file(credentialsId: 'firebase-is-awesome-qa-gcloud-auth-file', variable: 'GCLOUD_AUTH_FILE'),
+            string(credentialsId: 'firebase-is-awesome-qa-gcloud-service-account', variable: 'GCLOUD_SERVICE_ACCOUNT'),
+            string(credentialsId: 'firebase-is-awesome-qa-token', variable: 'FIREBASE_TOKEN')
+    ]) {
+        withEnv([
+                'FIREBASE_PROJECT_ID=awesome-qa'
+        ]) {
+            deploy('qa')
+        }
+    }
+}
+
+def deployToProd() {
+    withCredentials([
+            file(credentialsId: 'firebase-is-awesome-prod-gcloud-auth-file', variable: 'GCLOUD_AUTH_FILE'),
+            string(credentialsId: 'firebase-is-awesome-prod-gcloud-service-account', variable: 'GCLOUD_SERVICE_ACCOUNT'),
+            string(credentialsId: 'firebase-is-awesome-prod-token', variable: 'FIREBASE_TOKEN')
+    ]) {
+        withEnv([
+                'FIREBASE_PROJECT_ID=awesome-prod-b0980'
+        ]) {
+            deploy('prod')
+        }
+    }
+}
+
+def deploy(String ENVIRONMENT) {
+    withDockerContainer("firebase-is-awesome:${env.COMMIT_HASH}") {
+        stage('Copy Functions') {
+            sh '''
+                   rm -rf ./functions/lib
+                   cp -r /functions_lib ./functions/lib
+                   rm -rf ./functions/node_modules
+                   cp -r /function_modules ./functions/node_modules
+               '''
+        }
+        stage('Copy webapp') {
+            sh """
+                   rm -rf ./public
+                   cp -r /${ENVIRONMENT}_public ./public
+                   rm -rf ./webapp/node_modules
+                   cp -r /webapp_modules ./webapp/node_modules
+               """
+        }
+        stage('Copy App Engine') {
+            sh """
+                   rm -rf ./appengine/lib
+                   cp -r /appengine_lib ./appengine/lib
+               """
+        }
+    }
+
+    withDockerContainer('devillex/docker-firebase:slim') {
+        stage('Set firebase project') {
+            sh "firebase use $FIREBASE_PROJECT_ID --token $FIREBASE_TOKEN"
+        }
+        stage('Deploy Functions') {
+            sh '''
+                   firebase functions:config:set \
+                        boss.name="Endre"
+                   firebase deploy --only functions --token $FIREBASE_TOKEN
+               '''
+        }
+        stage('Deploy webapp') {
+            sh """
+                   firebase deploy --only hosting --token $FIREBASE_TOKEN
+               """
+        }
+    }
+    withDockerContainer(args: '-u root', image: 'google/cloud-sdk:214.0.0-alpine') {
+        stage('Deploy to gcloud') {
+            sh """
+                   cd appengine
+                   gcloud auth activate-service-account $GCLOUD_SERVICE_ACCOUNT --key-file $GCLOUD_AUTH_FILE
+                   gcloud config set project $FIREBASE_PROJECT_ID
+                   gcloud app deploy app.yaml cron.yaml --quiet --project=$FIREBASE_PROJECT_ID
+               """
+        }
+    }
+}
+
+def finishJob() {
+    currentBuild.result = currentBuild.result ?: 'SUCCESS'
+    cleanWs()
+}
