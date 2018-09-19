@@ -91,7 +91,7 @@ def deploy(String ENVIRONMENT) {
         stage('Deploy Functions') {
             sh '''
                    firebase functions:config:set \
-                        boss.name="Endre"
+                        boss.name="Attila"
                    firebase deploy --only functions --token $FIREBASE_TOKEN
                '''
         }

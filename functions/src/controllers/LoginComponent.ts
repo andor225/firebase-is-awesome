@@ -19,7 +19,7 @@ export default class LoginComponent {
     }
 
     private health = async (req: Request, res: Response, next: NextFunction) => {
-        const message = "Hello " + functions.config().boss.name;
+        const message = "Hi " + functions.config().boss.name;
         admin.database().ref('/messages/health').push({message})
             .then(_ => res.status(200).end());
     }
